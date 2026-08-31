@@ -1,0 +1,90 @@
+/* ============================================================
+ * 移动端专属适配样式（仅对移动 UA / 窄屏生效，不影响桌面端）
+ * 与 style.css 的断点互为补充：
+ *  - style.css 负责"窄屏"布局变化（列、字号、控件尺寸）
+ *  - 本文件负责"检测到移动设备后"强制应用的触控/降级样式
+ *  ============================================================ */
+
+/* 当 window.Mobile.isMobile 检测通过时，<html> 被添加 .is-mobile */
+html.is-mobile, html.is-mobile body {
+    /* iOS：禁止双击缩放；防止长按选中文本打扰交互（表单除外） */
+    touch-action: manipulation;
+}
+html.is-mobile *:not(input):not(textarea):not(select) {
+    -webkit-user-select: none;
+    user-select: none;
+}
+/* 画布容器的触摸手势隔离：canvas 内部需要 pointer 事件，
+   但系统级纵向滚动/双指缩放在此处会干扰交互 */
+html.is-mobile .simulation-canvas-wrapper {
+    touch-action: none;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+}
+/* 画布上手指按下时的轻微高亮反馈（柔和脉冲） */
+html.is-mobile #simulationCanvas:active {
+    outline: 2px solid rgba(160, 24, 48, 0.35);
+    outline-offset: -2px;
+    border-radius: 6px;
+}
+
+/* 低端移动设备：isLowEnd 标记下降低动画复杂度/关闭 hover 渐变以减少重绘 */
+html.is-mobile.is-lowend * {
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+}
+html.is-mobile.is-lowend .stat-card,
+html.is-mobile.is-lowend .subject-card,
+html.is-mobile.is-lowend .simulation-card,
+html.is-mobile.is-lowend .sidebar-section,
+html.is-mobile.is-lowend .simulation-main {
+    box-shadow: none !important;
+    background: #ffffff !important;
+    filter: none !important;
+}
+html.is-mobile.is-lowend .knowledge-section { background: #f8f9fa !important; }
+
+/* 横屏横屏：让导航高度压低，画布多占空间 */
+html.is-mobile.orientation-landscape .navbar-container {
+    padding-top: 6px !important;
+    padding-bottom: 6px !important;
+}
+html.is-mobile.orientation-landscape .simulation-header { display: none; }
+html.is-mobile.orientation-landscape #breadcrumb { display: none; }
+html.is-mobile.orientation-landscape .simulation-page { padding-top: 0; }
+
+/* 竖屏：提示横屏体验更佳（可选的温柔提示条，不阻塞交互） */
+html.is-mobile.orientation-portrait #orientationHint {
+    display: block;
+}
+#orientationHint {
+    display: none;
+    position: fixed;
+    left: 0; right: 0; bottom: 0;
+    z-index: 9999;
+    padding: 10px calc(10px + env(safe-area-inset-right))
+             calc(10px + env(safe-area-inset-bottom))
+             calc(10px + env(safe-area-inset-left));
+    background: rgba(22, 28, 48, 0.92);
+    color: #fff;
+    font-size: 0.9rem;
+    text-align: center;
+    border-top: 1px solid rgba(255,255,255,0.08);
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+    animation: hintIn .3s ease-out;
+}
+#orientationHint button {
+    margin-left: 10px;
+    background: var(--primary-color, #a01830);
+    border: 0;
+    color: #fff;
+    padding: 6px 12px;
+    border-radius: 14px;
+    font-size: 0.85rem;
+    min-height: 30px;
+}
+@keyframes hintIn {
+    from { transform: translateY(100%); opacity: 0; }
+    to   { transform: translateY(0);    opacity: 1; }
+}

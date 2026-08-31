@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="format-detection" content="telephone=no">
+    <title>自动冒烟测试 | 中国互动模拟实验平台</title>
+    <link rel="stylesheet" href="css/mobile.css?v=1">
+    <style>
+        body { font-family: 'Microsoft YaHei', sans-serif; background: #14181f; color: #e8eaed; margin: 0; padding: 20px; }
+        h1 { font-size: 1.3rem; } h1 small { color: #9aa0a6; font-weight: normal; }
+        .bar { display: flex; gap: 12px; align-items: center; margin: 12px 0; flex-wrap: wrap; }
+        button { background: #2d7ef7; color: #fff; border: 0; padding: 9px 18px; border-radius: 8px; cursor: pointer; font-size: .95rem; }
+        button.ghost { background: #3a4048; }
+        #summary { font-size: 1.05rem; }
+        .ok { color: #34d399; font-weight: bold; } .bad { color: #f87171; font-weight: bold; }
+        input { background: #20242b; border: 1px solid #3a4048; color: #e8eaed; padding: 8px 12px; border-radius: 8px; width: 220px; }
+        table { width: 100%; border-collapse: collapse; font-size: .86rem; margin-top: 8px; }
+        th, td { text-align: left; padding: 6px 10px; border-bottom: 1px solid #262b33; }
+        th { color: #9aa0a6; font-weight: 500; }
+        tr:hover td { background: #1c2129; }
+        a { color: #7ab8ff; text-decoration: none; }
+        .err { color: #f87171; font-family: Consolas, monospace; font-size: .8rem; }
+        #prog { height: 8px; background: #262b33; border-radius: 4px; overflow: hidden; width: 300px; }
+        #progFill { height: 100%; width: 0%; background: #2d7ef7; transition: width .15s; }
+    </style>
+</head>
+<body>
+    <h1>🧪 自动冒烟测试 <small>全部实验初始化 / 交互 / 更新 / 渲染 / 重置 一键验证</small></h1>
+    <div class="bar">
+        <button id="runBtn">▶ 运行全部测试</button>
+        <button id="failBtn" class="ghost">🔁 仅重跑失败项</button>
+        <input id="filter" placeholder="筛选实验ID…">
+        <span id="summary">尚未运行</span>
+        <div id="prog"><div id="progFill"></div></div>
+    </div>
+    <table>
+        <thead><tr><th>#</th><th>实验ID</th><th>引擎/模式</th><th>结果</th><th>错误信息</th><th>打开</th></tr></thead>
+        <tbody id="rows"></tbody>
+    </table>
+
+    <!-- 离屏画布：引擎会寻找 #simulationCanvas -->
+    <canvas id="simulationCanvas" width="960" height="540" style="position:fixed;left:-99999px;top:0;"></canvas>
+
+    <script src="js/data.js?v=6"></script>
+    <script src="js/utils.js?v=4"></script>
+    <script src="js/engine-kit.js?v=4"></script>
+    <script src="js/engine-registry.js?v=4"></script>
+    <script src="js/mobile.js?v=1"></script>
+    <script src="js/engines/waves.js?v=5"></script>
+    <script src="js/engines/optics.js?v=5"></script>
+    <script src="js/engines/mechanics.js?v=5"></script>
+    <script src="js/engines/particles.js?v=5"></script>
+    <script src="js/engines/graphs.js?v=5"></script>
+    <script src="js/engines/stats.js?v=7"></script>
+    <script src="js/engines/fields.js?v=6"></script>
+    <script src="js/engines/circuits.js?v=5"></script>
+    <script src="js/engines/chem.js?v=5"></script>
+    <script src="js/engines/astro.js?v=5"></script>
+    <script src="js/engines/numbers.js?v=5"></script>
+    <script src="js/engines/algebra.js?v=5"></script>
+    <script src="js/engines/bio.js?v=5"></script>
+    <script src="js/engines/generic.js?v=1"></script>
+    <script src="js/experiment-map.js?v=5"></script>
+    <script>
+        // 找到各实验所属学科（用于"打开"链接）
+        function subjectOf(id) {
+            for (const [sub, list] of Object.entries(simulationsConfig)) {
+                if (list.some(s => s.id === id)) return sub;
+            }
+            return 'physics';
+        }
+
+        // 构造桩 loader，模拟 SimulationLoader 提供的接口
+        function makeStub(id) {
+            return {
+                state: { simulationId: id, running: false, time: 0 },
+                setKnowledge() {},
+                setPresets() {},
+                updateDataDisplay() {},
+                showToast() {}
+            };
+        }
+
+        const results = {};   // id -> {ok, err, engine, mode}
+        let order = [];
+
+        async function runOne(id) {
+            const entry = ExperimentMap[id];
+            const meta = { ok: false, err: '', engine: entry.engine, mode: entry.mode || '(id)' };
+            try {
+                const inst = EngineRegistry.build(Object.assign({ id }, entry));
+                const loader = makeStub(id);
+                inst.init(loader);
+                // 控件检查 + 触发一轮回调
+                const ctrls = inst.getControls();
+                if (!Array.isArray(ctrls)) throw new Error('getControls 未返回数组');
+                ctrls.slice(0, 6).forEach(c => {
+                    try {
+                        if (c.type === 'slider' && c.onChange) c.onChange(Math.min(c.max, c.value + (c.step || 1)));
+                        else if (c.type === 'select' && c.onChange && c.options && c.options.length) c.onChange(c.options[c.options.length - 1].value);
+                        else if (c.type === 'checkbox' && c.onChange) c.onChange(!c.value);
+                        else if (c.type === 'button' && c.action) c.action();
+                    } catch (e) { throw new Error('控件[' + c.id + ']回调异常: ' + e.message); }
+                });
+                // 空转 60 帧
+                for (let i = 0; i < 60; i++) inst.update(1 / 60, i / 60);
+                const cv = document.getElementById('simulationCanvas');
+                const ctx = cv.getContext('2d');
+                for (let i = 0; i < 3; i++) { ctx.clearRect(0, 0, cv.width, cv.height); inst.render(ctx, cv.width, cv.height, 1); }
+                // 指针事件（若实现）
+                try {
+                    inst.onPointerDown && inst.onPointerDown(480, 270, {});
+                    inst.onPointerMove && inst.onPointerMove(500, 280, {});
+                    inst.onPointerUp && inst.onPointerUp(500, 280, {});
+                } catch (e) { throw new Error('指针事件异常: ' + e.message); }
+                inst.reset();
+                inst.getControls(); // reset 后控件仍需可用
+                meta.ok = true;
+            } catch (e) {
+                meta.err = (e && e.message) ? e.message : String(e);
+                console.error('[smoke]', id, e);
+            }
+            results[id] = meta;
+            paintRow(id);
+        }
+
+        async function runAll(onlyIds) {
+            const ids = onlyIds || Object.keys(ExperimentMap);
+            order = ids;
+            let done = 0;
+            document.getElementById('runBtn').disabled = true;
+            for (const id of ids) {
+                await runOne(id);
+                done++;
+                document.getElementById('progFill').style.width = (done / ids.length * 100) + '%';
+                document.getElementById('summary').innerHTML =
+                    `<span class="ok">通过 ${done - countFail(ids.slice(0, done))}</span> / ${done}/${ids.length}`;
+                await new Promise(r => setTimeout(r, 8));   // 分片执行避免卡死
+            }
+            document.getElementById('runBtn').disabled = false;
+        }
+
+        function countFail(list) { return list.filter(id => results[id] && !results[id].ok).length; }
+
+        function paintRow(id) {
+            const m = results[id];
+            const tr = document.getElementById('row-' + CSS.escape(id));
+            const err = m.err ? `<span class="err">${m.err.replace(/</g, '&lt;')}</span>` : '';
+            const status = m.ok ? '<span class="ok">✅ 通过</span>' : '<span class="bad">❌ 失败</span>';
+            if (tr) {
+                tr.innerHTML = `<td></td><td>${id}</td><td>${m.engine}/${m.mode}</td><td>${status}</td><td>${err}</td>
+                    <td><a target="_blank" href="simulation.html?subject=${subjectOf(id)}&id=${id}">查看</a></td>`;
+            }
+        }
+
+        function buildTable() {
+            const kw = document.getElementById('filter').value.trim().toLowerCase();
+            const rows = document.getElementById('rows');
+            rows.innerHTML = '';
+            let i = 0;
+            Object.keys(ExperimentMap).forEach(id => {
+                if (kw && !id.toLowerCase().includes(kw)) return;
+                i++;
+                const tr = document.createElement('tr');
+                tr.id = 'row-' + CSS.escape(id);
+                const m = results[id];
+                tr.innerHTML = `<td>${i}</td><td>${id}</td><td>${ExperimentMap[id].engine}/${ExperimentMap[id].mode}</td>
+                    <td>${m ? (m.ok ? '<span class="ok">✅ 通过</span>' : '<span class="bad">❌ 失败</span>') : '⏳ 未测'}</td>
+                    <td>${m && m.err ? `<span class="err">${m.err.replace(/</g, '&lt;')}</span>` : ''}</td>
+                    <td><a target="_blank" href="simulation.html?subject=${subjectOf(id)}&id=${id}">查看</a></td>`;
+                rows.appendChild(tr);
+            });
+        }
+
+        document.getElementById('runBtn').addEventListener('click', () => { buildTable(); runAll(); });
+        document.getElementById('failBtn').addEventListener('click', () => {
+            const fails = Object.keys(results).filter(id => !results[id].ok);
+            if (!fails.length) { alert('没有失败项'); return; }
+            buildTable(); runAll(fails);
+        });
+        document.getElementById('filter').addEventListener('input', buildTable);
+        buildTable();
+        // 自动开始运行
+        window.addEventListener('load', () => { buildTable(); runAll(); });
+    </script>
+</body>
+</html>

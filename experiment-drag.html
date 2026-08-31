@@ -1,0 +1,1479 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#a01830">
+    <meta name="format-detection" content="telephone=no">
+    <title>欧姆定律实验 | 拖拽式互动实验</title>
+    <link rel="stylesheet" href="css/style.css?v=4">
+    <link rel="stylesheet" href="css/mobile.css?v=1">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 15px;
+            overflow: hidden;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 260px 1fr 280px;
+            gap: 15px;
+            height: calc(100vh - 30px);
+        }
+
+        /* ========== 左侧：步骤指导 ========== */
+        .steps-panel {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            overflow-y: auto;
+        }
+
+        .panel-title {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #667eea;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .step-item {
+            padding: 12px;
+            margin-bottom: 10px;
+            border-radius: 10px;
+            border-left: 4px solid #bdc3c7;
+            background: #f8f9fa;
+            transition: all 0.3s ease;
+            cursor: default;
+        }
+
+        .step-item.pending { opacity: 0.6; }
+        .step-item.current {
+            border-left-color: #e74c3c;
+            background: linear-gradient(90deg, #fff5f5 0%, #ffffff 100%);
+            box-shadow: 0 2px 8px rgba(231, 76, 60, 0.2);
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        .step-item.done {
+            border-left-color: #27ae60;
+            background: linear-gradient(90deg, #f0fff4 0%, #ffffff 100%);
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: translateX(0); }
+            50% { transform: translateX(3px); }
+        }
+
+        .step-number {
+            display: inline-flex;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: #bdc3c7;
+            color: white;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 0.8rem;
+            margin-right: 8px;
+        }
+
+        .step-item.current .step-number { background: #e74c3c; }
+        .step-item.done .step-number { background: #27ae60; }
+
+        .step-text {
+            font-size: 0.9rem;
+            color: #333;
+            display: inline;
+        }
+
+        .step-hint {
+            margin-top: 8px;
+            padding: 8px;
+            background: #fff9e6;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            color: #856404;
+            display: none;
+        }
+
+        .step-item.current .step-hint { display: block; }
+
+        .check-icon::after { content: ' ✅'; }
+        .error-icon::after { content: ' ❌'; }
+
+        /* ========== 中间：实验台 ========== */
+        .lab-area {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .lab-header {
+            background: linear-gradient(135deg, #c41e3a 0%, #a01830 100%);
+            color: white;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .lab-header h2 {
+            font-size: 1.3rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .lab-progress {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.9rem;
+        }
+
+        .progress-bar {
+            width: 150px;
+            height: 10px;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 5px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #ffd700, #ffed4e);
+            transition: width 0.5s ease;
+            width: 0%;
+        }
+
+        .lab-bench {
+            flex: 1;
+            position: relative;
+            background:
+                linear-gradient(rgba(139, 69, 19, 0.1) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(139, 69, 19, 0.1) 1px, transparent 1px),
+                linear-gradient(135deg, #f5f0e6 0%, #ebe4d4 100%);
+            background-size: 40px 40px, 40px 40px, 100% 100%;
+            overflow: hidden;
+        }
+
+        .bench-label {
+            position: absolute;
+            bottom: 10px;
+            right: 20px;
+            color: rgba(139, 69, 19, 0.4);
+            font-size: 0.9rem;
+            font-style: italic;
+        }
+
+        .drop-zone-active {
+            background:
+                linear-gradient(rgba(39, 174, 96, 0.2) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(39, 174, 96, 0.2) 1px, transparent 1px),
+                linear-gradient(135deg, #e8f8f0 0%, #d4eddc 100%);
+            background-size: 40px 40px, 40px 40px, 100% 100%;
+        }
+
+        /* ========== 器材通用样式 ========== */
+        .equipment {
+            position: absolute;
+            cursor: grab;
+            user-select: none;
+            z-index: 10;
+            transition: box-shadow 0.2s ease;
+        }
+
+        .equipment:active { cursor: grabbing; }
+
+        .equipment.dragging {
+            z-index: 1000;
+            opacity: 0.9;
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3);
+            transform: scale(1.05);
+        }
+
+        .equipment .connector {
+            position: absolute;
+            width: 14px;
+            height: 14px;
+            background: #34495e;
+            border: 2px solid #2c3e50;
+            border-radius: 50%;
+            cursor: crosshair;
+            transition: all 0.2s ease;
+        }
+
+        .equipment .connector:hover,
+        .equipment .connector.connecting {
+            background: #e74c3c;
+            transform: scale(1.4);
+            box-shadow: 0 0 10px #e74c3c;
+        }
+
+        .equipment .connector.connected {
+            background: #27ae60;
+            box-shadow: 0 0 8px #27ae60;
+        }
+
+        /* 电池 */
+        .battery {
+            width: 130px;
+            height: 70px;
+            background: linear-gradient(180deg, #ffd700 0%, #ffae00 50%, #ff8c00 100%);
+            border-radius: 8px;
+            border: 3px solid #a0522d;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .battery-label {
+            font-size: 1rem;
+            font-weight: bold;
+            color: #5c3317;
+            margin-top: -20px;
+        }
+
+        .battery-voltage {
+            font-size: 0.75rem;
+            color: #5c3317;
+            margin-top: 2px;
+        }
+
+        /* 灯泡 */
+        .bulb {
+            width: 80px;
+            height: 110px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .bulb-glass {
+            width: 60px;
+            height: 60px;
+            background: radial-gradient(circle at 35% 35%, #ffffff 0%, #e8e8e8 60%, #c0c0c0 100%);
+            border-radius: 50% 50% 45% 45%;
+            border: 2px solid #888;
+            position: relative;
+            box-shadow: inset -5px -5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .bulb.on .bulb-glass {
+            background: radial-gradient(circle at 50% 50%, #fff9c4 0%, #ffd54f 40%, #ffb300 80%);
+            box-shadow: 0 0 40px #ffd54f, inset -5px -5px 15px rgba(255, 150, 0, 0.3);
+        }
+
+        .bulb-filament {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 30px;
+            height: 15px;
+            border: 2px solid #888;
+            border-top: none;
+            border-radius: 0 0 15px 15px;
+        }
+
+        .bulb.on .bulb-filament {
+            border-color: #ff6600;
+            background: rgba(255, 150, 0, 0.3);
+        }
+
+        .bulb-base {
+            width: 35px;
+            height: 40px;
+            background: linear-gradient(180deg, #555 0%, #333 100%);
+            border-radius: 3px 3px 6px 6px;
+            margin-top: -2px;
+            border: 2px solid #222;
+        }
+
+        .bulb-base::after {
+            content: '';
+            position: absolute;
+            bottom: 8px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 10px;
+            height: 10px;
+            background: #444;
+            border-radius: 50%;
+        }
+
+        /* 开关 */
+        .switch {
+            width: 100px;
+            height: 50px;
+            background: linear-gradient(180deg, #e0e0e0 0%, #b0b0b0 100%);
+            border-radius: 8px;
+            border: 2px solid #777;
+            position: relative;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .switch-lever {
+            position: absolute;
+            bottom: 12px;
+            left: 15px;
+            width: 50px;
+            height: 6px;
+            background: linear-gradient(180deg, #555 0%, #333 100%);
+            border-radius: 3px;
+            transform-origin: left center;
+            transform: rotate(-30deg);
+            transition: transform 0.3s ease;
+        }
+
+        .switch.closed .switch-lever {
+            transform: rotate(0deg);
+        }
+
+        .switch-terminal {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background: #c0392b;
+            border-radius: 50%;
+            bottom: 10px;
+        }
+
+        .switch-terminal.left { left: 8px; }
+        .switch-terminal.right { right: 8px; }
+
+        .switch-label {
+            position: absolute;
+            top: 4px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.7rem;
+            font-weight: bold;
+            color: #333;
+        }
+
+        /* 电流表 */
+        .ammeter {
+            width: 90px;
+            height: 90px;
+            background: radial-gradient(circle at 50% 40%, #f5f5f5 0%, #e0e0e0 100%);
+            border-radius: 50%;
+            border: 4px solid #444;
+            position: relative;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        .ammeter-face {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            right: 10px;
+            bottom: 20px;
+            border-radius: 50%;
+            background: #fff;
+            overflow: hidden;
+        }
+
+        .ammeter-scale {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .ammeter-needle {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 30px;
+            height: 3px;
+            background: linear-gradient(90deg, transparent 0%, #c0392b 20%, #c0392b 100%);
+            transform-origin: 0 50%;
+            transform: translate(-0%, -50%) rotate(-60deg);
+            transition: transform 0.5s ease;
+        }
+
+        .ammeter-label {
+            position: absolute;
+            bottom: 3px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.6rem;
+            font-weight: bold;
+            color: #c0392b;
+        }
+
+        .ammeter-reading {
+            position: absolute;
+            top: 55%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 0.65rem;
+            font-weight: bold;
+            color: #333;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 1px 4px;
+            border-radius: 3px;
+        }
+
+        /* 导线 */
+        .wire-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 5;
+        }
+
+        .wire-path {
+            stroke: #2c3e50;
+            stroke-width: 4;
+            fill: none;
+            pointer-events: stroke;
+            cursor: pointer;
+            transition: stroke 0.2s;
+        }
+
+        .wire-path:hover { stroke: #e74c3c; }
+
+        .wire-path.electrified {
+            stroke: #3498db;
+            stroke-width: 5;
+            filter: drop-shadow(0 0 3px rgba(52, 152, 219, 0.5));
+        }
+
+        /* ========== 右侧：工具箱 ========== */
+        .tools-panel {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            overflow-y: auto;
+        }
+
+        .tool-item {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border: 2px dashed #ced4da;
+            border-radius: 10px;
+            padding: 10px;
+            margin-bottom: 12px;
+            cursor: grab;
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+        }
+
+        .tool-item:hover {
+            border-color: #667eea;
+            background: linear-gradient(135deg, #fff 0%, #f0f4ff 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+        }
+
+        .tool-item:active { cursor: grabbing; }
+
+        .tool-item.disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+
+        .tool-item.used {
+            opacity: 0.3;
+            border-style: solid;
+            border-color: #27ae60;
+        }
+
+        .tool-preview {
+            transform: scale(0.6);
+            transform-origin: center top;
+            position: relative;
+            height: 60px;
+            pointer-events: none;
+        }
+
+        .tool-preview > div {
+            position: relative;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .tool-name {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-top: 5px;
+        }
+
+        .tool-count {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: #667eea;
+            color: white;
+            border-radius: 10px;
+            padding: 2px 8px;
+            font-size: 0.7rem;
+            font-weight: bold;
+        }
+
+        .tools-hint {
+            margin-top: 15px;
+            padding: 12px;
+            background: #fff3cd;
+            border-radius: 8px;
+            border-left: 4px solid #ffc107;
+            font-size: 0.85rem;
+            color: #856404;
+            line-height: 1.5;
+        }
+
+        /* 数据显示区 */
+        .data-panel {
+            margin-top: 15px;
+            padding: 15px;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            border-radius: 10px;
+            color: white;
+        }
+
+        .data-panel h4 {
+            font-size: 0.9rem;
+            margin-bottom: 12px;
+            color: #ffd700;
+            border-bottom: 1px solid rgba(255, 215, 0, 0.3);
+            padding-bottom: 5px;
+        }
+
+        .data-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 6px 0;
+            font-size: 0.85rem;
+        }
+
+        .data-label { color: #aaa; }
+        .data-value { font-weight: bold; color: #fff; }
+        .data-value.current { color: #2ecc71; }
+        .data-value.voltage { color: #3498db; }
+
+        /* 重置按钮 */
+        .reset-btn {
+            width: 100%;
+            margin-top: 15px;
+            padding: 12px;
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .reset-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(231, 76, 60, 0.4);
+        }
+
+        /* 成功提示 */
+        .success-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+        }
+
+        .success-overlay.show { display: flex; }
+
+        .success-card {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            text-align: center;
+            max-width: 400px;
+            animation: bounceIn 0.5s ease;
+        }
+
+        @keyframes bounceIn {
+            0% { transform: scale(0.5); opacity: 0; }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .success-card .big-icon {
+            font-size: 5rem;
+            margin-bottom: 20px;
+        }
+
+        .success-card h2 {
+            color: #27ae60;
+            margin-bottom: 15px;
+        }
+
+        .success-card p {
+            color: #666;
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+
+        /* Toast 提示 */
+        .toast {
+            position: fixed;
+            top: 100px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-20px);
+            background: rgba(44, 62, 80, 0.95);
+            color: white;
+            padding: 15px 30px;
+            border-radius: 10px;
+            z-index: 10000;
+            opacity: 0;
+            transition: all 0.3s ease;
+            pointer-events: none;
+            font-weight: 500;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        .toast.success { background: rgba(39, 174, 96, 0.95); }
+        .toast.error { background: rgba(231, 76, 60, 0.95); }
+        .toast.info { background: rgba(52, 152, 219, 0.95); }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <!-- 左侧：步骤指导 -->
+    <div class="steps-panel">
+        <div class="panel-title">📋 实验步骤</div>
+        <div id="stepsList">
+            <!-- 步骤列表由 JS 动态生成 -->
+        </div>
+    </div>
+
+    <!-- 中间：实验台 -->
+    <div class="lab-area">
+        <div class="lab-header">
+            <h2>⚡ 欧姆定律实验台</h2>
+            <div class="lab-progress">
+                <span>进度</span>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+                <span id="progressText">0/6</span>
+            </div>
+        </div>
+        <div class="lab-bench" id="labBench">
+            <!-- 导线 SVG -->
+            <svg class="wire-container" id="wireSvg"></svg>
+            <div class="bench-label">🧪 实验台</div>
+        </div>
+    </div>
+
+    <!-- 右侧：工具箱 -->
+    <div class="tools-panel">
+        <div class="panel-title">🧰 实验器材</div>
+        <div id="toolbox">
+            <!-- 工具箱由 JS 动态生成 -->
+        </div>
+
+        <div class="data-panel" id="dataPanel">
+            <h4>📊 电路数据</h4>
+            <div class="data-row">
+                <span class="data-label">电路状态：</span>
+                <span class="data-value" id="circuitStatus">❌ 未接通</span>
+            </div>
+            <div class="data-row">
+                <span class="data-label">电压 U：</span>
+                <span class="data-value voltage" id="dataVoltage">— V</span>
+            </div>
+            <div class="data-row">
+                <span class="data-label">电流 I：</span>
+                <span class="data-value current" id="dataCurrent">— A</span>
+            </div>
+        </div>
+
+        <div class="tools-hint">
+            💡 操作提示：<br>
+            • 从右侧拖动器材到实验台<br>
+            • 点击器材连接点，再点另一个连接点绘制导线<br>
+            • 点击开关可闭合/断开电路
+        </div>
+
+        <button class="reset-btn" onclick="resetExperiment()">
+            🔄 重置实验
+        </button>
+    </div>
+</div>
+
+<!-- 成功提示 -->
+<div class="success-overlay" id="successOverlay">
+    <div class="success-card">
+        <div class="big-icon">🎉</div>
+        <h2>实验成功！</h2>
+        <p>
+            你成功搭建了一个完整的电路！<br>
+            当开关闭合时，电流从电池正极流出，
+            经过电流表和灯泡，流回负极。
+        </p>
+        <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+            <strong style="color: #c41e3a;">欧姆定律：</strong>I = U / R = <span id="successFormula">—</span>
+        </div>
+        <button class="reset-btn" style="margin-top: 0; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);" onclick="closeSuccess()">继续探索</button>
+    </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+/* ==================== 状态管理 ==================== */
+const State = {
+    currentStep: 0,
+    placedEquipment: [],  // 已放置器材
+    wires: [],            // 导线
+    connectingFrom: null, // 正在连接的端点
+    circuitClosed: false, // 电路是否闭合
+    stepCompleted: []     // 步骤完成状态
+};
+
+// 实验步骤
+const STEPS = [
+    {
+        title: '放置干电池',
+        hint: '从右侧工具箱拖动「干电池」到实验台中央位置',
+        check: () => State.placedEquipment.find(e => e.type === 'battery'),
+        done: false
+    },
+    {
+        title: '放置开关',
+        hint: '从右侧工具箱拖动「开关」放在电池右侧',
+        check: () => State.placedEquipment.find(e => e.type === 'switch'),
+        done: false
+    },
+    {
+        title: '放置电流表',
+        hint: '拖动「电流表」放在开关右侧，用于测量电流',
+        check: () => State.placedEquipment.find(e => e.type === 'ammeter'),
+        done: false
+    },
+    {
+        title: '放置小灯泡',
+        hint: '拖动「小灯泡」放在电流表右侧',
+        check: () => State.placedEquipment.find(e => e.type === 'bulb'),
+        done: false
+    },
+    {
+        title: '用导线连接所有器材',
+        hint: '点击一个器材的端点，再点击另一个端点连接导线。\n连接顺序：电池正极 → 开关 → 电流表 → 灯泡 → 电池负极',
+        check: () => State.wires.length >= 4,
+        done: false
+    },
+    {
+        title: '闭合开关观察电流',
+        hint: '点击实验台上的开关使其闭合，观察电流表指针和灯泡变化！',
+        check: () => State.circuitClosed,
+        done: false
+    }
+];
+
+/* ==================== 渲染步骤列表 ==================== */
+function renderSteps() {
+    const list = document.getElementById('stepsList');
+    list.innerHTML = STEPS.map((step, i) => {
+        let cls = 'step-item';
+        let icon = '';
+        if (i < State.currentStep) { cls += ' done'; icon = 'class="check-icon"'; }
+        else if (i === State.currentStep) cls += ' current';
+        else cls += ' pending';
+        
+        return `
+            <div class="${cls}" id="step-${i}">
+                <span class="step-number">${step.done ? '✓' : i + 1}</span>
+                <span class="step-text" ${icon}>${step.title}</span>
+                <div class="step-hint">💡 ${step.hint.replace(/\n/g, '<br>')}</div>
+            </div>
+        `;
+    }).join('');
+    
+    // 进度条
+    const done = STEPS.filter(s => s.done).length;
+    document.getElementById('progressFill').style.width = (done / STEPS.length * 100) + '%';
+    document.getElementById('progressText').textContent = `${done}/${STEPS.length}`;
+}
+
+/* ==================== 工具箱 ==================== */
+const TOOLS = [
+    { type: 'battery', name: '干电池 (4.5V)', limit: 1 },
+    { type: 'switch', name: '开关', limit: 1 },
+    { type: 'ammeter', name: '电流表', limit: 1 },
+    { type: 'bulb', name: '小灯泡', limit: 1 }
+];
+
+function renderToolbox() {
+    const box = document.getElementById('toolbox');
+    box.innerHTML = TOOLS.map(tool => {
+        const usedCount = State.placedEquipment.filter(e => e.type === tool.type).length;
+        const used = usedCount >= tool.limit;
+        return `
+            <div class="tool-item ${used ? 'used' : ''}" data-type="${tool.type}">
+                ${!used ? `<div class="tool-count">${tool.limit - usedCount}</div>` : '<div class="tool-count" style="background:#95a5a6">✓</div>'}
+                <div class="tool-preview">${getToolPreview(tool.type)}</div>
+                <div class="tool-name">${tool.name}</div>
+            </div>
+        `;
+    }).join('');
+    
+    // 绑定拖拽
+    document.querySelectorAll('.tool-item:not(.used)').forEach(item => {
+        item.addEventListener('mousedown', onToolBoxMouseDown);
+        item.addEventListener('touchstart', onToolBoxTouchStart, { passive: false });
+    });
+}
+
+function getToolPreview(type) {
+    switch(type) {
+        case 'battery':
+            return `<div style="width:65px;height:35px;background:linear-gradient(180deg,#ffd700,#ff8c00);border:2px solid #a0522d;border-radius:4px;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+                <div style="font-weight:bold;color:#5c3317;font-size:0.7rem;">+ | 4.5V</div>
+                </div>`;
+        case 'bulb':
+            return `<div style="width:40px;height:55px;display:flex;flex-direction:column;align-items:center;">
+                <div style="width:30px;height:30px;background:radial-gradient(circle at 35% 35%,#fff,#e8e8e8);border-radius:50% 50% 45% 45%;border:2px solid #888;"></div>
+                <div style="width:18px;height:20px;background:linear-gradient(180deg,#555,#333);border-radius:0 0 3px 3px;border:2px solid #222;"></div>
+                </div>`;
+        case 'switch':
+            return `<div style="width:50px;height:25px;background:linear-gradient(180deg,#e0e0e0,#b0b0b0);border-radius:4px;border:2px solid #777;position:relative;">
+                <div style="position:absolute;bottom:6px;left:8px;width:25px;height:3px;background:#555;border-radius:2px;transform-origin:left;transform:rotate(-30deg);"></div>
+                </div>`;
+        case 'ammeter':
+            return `<div style="width:45px;height:45px;background:radial-gradient(circle at 50% 40%,#f5f5f5,#e0e0e0);border-radius:50%;border:3px solid #444;position:relative;">
+                <div style="position:absolute;top:30%;left:45%;width:15px;height:2px;background:#c0392b;transform-origin:left;transform:rotate(-45deg);"></div>
+                <div style="position:absolute;bottom:2px;left:50%;transform:translateX(-50%);font-size:0.5rem;font-weight:bold;color:#c0392b;">A</div>
+                </div>`;
+    }
+    return '';
+}
+
+/* ==================== 拖拽引擎（从工具箱到实验台） ==================== */
+let dragState = null;
+
+function onToolBoxMouseDown(e) {
+    const type = e.currentTarget.dataset.type;
+    startDragFromToolbox(type, e.clientX, e.clientY);
+}
+
+function onToolBoxTouchStart(e) {
+    e.preventDefault();
+    const touch = e.touches[0];
+    const type = e.currentTarget.dataset.type;
+    startDragFromToolbox(type, touch.clientX, touch.clientY);
+}
+
+function startDragFromToolbox(type, startX, startY) {
+    // 创建预览元素
+    const el = createEquipmentDOM(type, -1000, -1000, true);
+    document.body.appendChild(el);
+    
+    const rect = el.getBoundingClientRect();
+    const offsetX = rect.width / 2;
+    const offsetY = rect.height / 2;
+    
+    dragState = {
+        phase: 'from-toolbox',
+        type: type,
+        element: el,
+        offsetX, offsetY,
+        x: startX - offsetX,
+        y: startY - offsetY
+    };
+    
+    updateDragPosition();
+    
+    document.addEventListener('mousemove', onDocumentMove);
+    document.addEventListener('mouseup', onDocumentUp);
+    document.addEventListener('touchmove', onDocumentTouchMove, { passive: false });
+    document.addEventListener('touchend', onDocumentTouchEnd);
+}
+
+function onDocumentMove(e) {
+    if (!dragState) return;
+    dragState.x = e.clientX - dragState.offsetX;
+    dragState.y = e.clientY - dragState.offsetY;
+    updateDragPosition();
+    
+    // 高亮实验台
+    const bench = document.getElementById('labBench');
+    if (isInsideBench(e.clientX, e.clientY)) {
+        bench.classList.add('drop-zone-active');
+    } else {
+        bench.classList.remove('drop-zone-active');
+    }
+}
+
+function onDocumentTouchMove(e) {
+    e.preventDefault();
+    const touch = e.touches[0];
+    if (!dragState) return;
+    dragState.x = touch.clientX - dragState.offsetX;
+    dragState.y = touch.clientY - dragState.offsetY;
+    updateDragPosition();
+}
+
+function updateDragPosition() {
+    if (!dragState) return;
+    dragState.element.style.left = dragState.x + 'px';
+    dragState.element.style.top = dragState.y + 'px';
+}
+
+function onDocumentUp(e) {
+    if (!dragState) return;
+    finishDrag(e.clientX, e.clientY);
+}
+
+function onDocumentTouchEnd(e) {
+    if (!dragState) return;
+    const touch = e.changedTouches[0];
+    finishDrag(touch.clientX, touch.clientY);
+}
+
+function finishDrag(x, y) {
+    document.removeEventListener('mousemove', onDocumentMove);
+    document.removeEventListener('mouseup', onDocumentUp);
+    document.removeEventListener('touchmove', onDocumentTouchMove);
+    document.removeEventListener('touchend', onDocumentTouchEnd);
+    
+    document.getElementById('labBench').classList.remove('drop-zone-active');
+    
+    const bench = document.getElementById('labBench');
+    const benchRect = bench.getBoundingClientRect();
+    
+    if (dragState.phase === 'from-toolbox' && 
+        x >= benchRect.left && x <= benchRect.right &&
+        y >= benchRect.top && y <= benchRect.bottom) {
+        
+        // 放置成功
+        const benchX = x - benchRect.left - dragState.offsetX;
+        const benchY = y - benchRect.top - dragState.offsetY;
+        placeEquipment(dragState.type, benchX, benchY);
+    }
+    
+    if (dragState.element) dragState.element.remove();
+    dragState = null;
+}
+
+/* ==================== 放置器材 ==================== */
+function placeEquipment(type, x, y) {
+    const id = Date.now();
+    const equipment = { id, type, x, y, data: {} };
+    if (type === 'battery') equipment.data.voltage = 4.5;
+    if (type === 'switch') equipment.data.closed = false;
+    
+    State.placedEquipment.push(equipment);
+    const el = createEquipmentDOM(type, x, y, false, id);
+    document.getElementById('labBench').appendChild(el);
+    equipment.element = el;
+    equipment.connectors = getEquipmentConnectors(equipment);
+    
+    showToast('✅ ' + TOOLS.find(t => t.type === type).name + ' 放置成功', 'success');
+    renderToolbox();
+    checkStepProgress();
+}
+
+// 创建器材DOM
+function createEquipmentDOM(type, x, y, isDragPreview, id) {
+    const el = document.createElement('div');
+    el.className = 'equipment';
+    if (isDragPreview) {
+        el.classList.add('dragging');
+        el.style.position = 'fixed';
+    }
+    el.style.left = x + 'px';
+    el.style.top = y + 'px';
+    if (id) el.dataset.id = id;
+    
+    switch(type) {
+        case 'battery':
+            el.innerHTML = `
+                <div class="battery" style="position:relative;">
+                    <div style="position:absolute;top:-12px;left:10px;width:10px;height:12px;background:#c0392b;border-radius:3px 3px 0 0;"></div>
+                    <div style="position:absolute;top:-12px;right:10px;width:10px;height:12px;background:#7f8c8d;border-radius:3px 3px 0 0;"></div>
+                    <div class="battery-label">⚡</div>
+                    <div class="battery-voltage">4.5 V</div>
+                    <div class="connector" data-point="positive" style="top:-18px;left:6px;width:16px;height:16px;background:#c0392b;border-color:#922b21;"></div>
+                    <div class="connector" data-point="negative" style="top:-18px;right:6px;width:16px;height:16px;background:#7f8c8d;border-color:#566573;"></div>
+                </div>
+                <div style="position:absolute;bottom:-5px;left:50%;transform:translateX(-50%);font-size:0.6rem;font-weight:bold;color:#c0392b;">+</div>
+                <div style="position:absolute;bottom:-5px;right:10px;font-size:0.6rem;font-weight:bold;color:#566573;">−</div>
+            `;
+            el.style.width = '130px';
+            el.style.height = '90px';
+            break;
+        case 'bulb':
+            el.innerHTML = `
+                <div class="bulb" id="bulb-${id || 0}">
+                    <div class="bulb-glass">
+                        <div class="bulb-filament"></div>
+                    </div>
+                    <div class="bulb-base"></div>
+                </div>
+                <div class="connector" data-point="base" style="bottom:0;left:50%;transform:translateX(-50%);width:14px;height:14px;"></div>
+                <div class="connector" data-point="side" style="top:65%;right:-2px;width:12px;height:12px;"></div>
+            `;
+            el.style.width = '80px';
+            el.style.height = '125px';
+            break;
+        case 'switch':
+            el.innerHTML = `
+                <div class="switch" id="switch-${id || 0}" onclick="toggleSwitch(${id || 0}, event)">
+                    <div class="switch-label">开关</div>
+                    <div class="switch-lever"></div>
+                </div>
+                <div class="connector" data-point="left" style="bottom:10px;left:-4px;width:14px;height:14px;"></div>
+                <div class="connector" data-point="right" style="bottom:10px;right:-4px;width:14px;height:14px;"></div>
+            `;
+            el.style.width = '100px';
+            el.style.height = '60px';
+            break;
+        case 'ammeter':
+            el.innerHTML = `
+                <div class="ammeter">
+                    <div class="ammeter-face">
+                        <div class="ammeter-needle" id="needle-${id || 0}"></div>
+                        <div class="ammeter-reading" id="ammeter-reading-${id || 0}">0.00A</div>
+                    </div>
+                    <div class="ammeter-label">A</div>
+                </div>
+                <div class="connector" data-point="left" style="top:50%;left:-4px;transform:translateY(-50%);width:14px;height:14px;"></div>
+                <div class="connector" data-point="right" style="top:50%;right:-4px;transform:translateY(-50%);width:14px;height:14px;"></div>
+            `;
+            el.style.width = '100px';
+            el.style.height = '100px';
+            break;
+    }
+    
+    // 实验台上的器材支持移动
+    if (!isDragPreview) {
+        el.addEventListener('mousedown', onBenchMouseDown);
+        el.addEventListener('touchstart', onBenchTouchStart, { passive: false });
+        
+        // 端点连接
+        el.querySelectorAll('.connector').forEach(conn => {
+            conn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                onConnectorClick(el, conn);
+            });
+        });
+    }
+    
+    return el;
+}
+
+// 获取器材端点坐标
+function getEquipmentConnectors(equipment) {
+    const result = {};
+    const el = equipment.element;
+    const benchRect = document.getElementById('labBench').getBoundingClientRect();
+    
+    el.querySelectorAll('.connector').forEach(conn => {
+        const rect = conn.getBoundingClientRect();
+        const point = conn.dataset.point;
+        result[point] = {
+            x: rect.left + rect.width / 2 - benchRect.left,
+            y: rect.top + rect.height / 2 - benchRect.top,
+            el: conn
+        };
+    });
+    return result;
+}
+
+/* ==================== 实验台上器材拖动 ==================== */
+function onBenchMouseDown(e) {
+    if (e.target.classList.contains('connector')) return;
+    const el = e.currentTarget;
+    startDragOnBench(el, e.clientX, e.clientY);
+}
+
+function onBenchTouchStart(e) {
+    if (e.target.classList.contains('connector')) return;
+    e.preventDefault();
+    const touch = e.touches[0];
+    const el = e.currentTarget;
+    startDragOnBench(el, touch.clientX, touch.clientY);
+}
+
+function startDragOnBench(el, startX, startY) {
+    const rect = el.getBoundingClientRect();
+    const benchRect = document.getElementById('labBench').getBoundingClientRect();
+    
+    dragState = {
+        phase: 'on-bench',
+        element: el,
+        offsetX: startX - rect.left,
+        offsetY: startY - rect.top,
+        originalLeft: benchRect.left,
+        originalTop: benchRect.top,
+        equipmentId: parseInt(el.dataset.id)
+    };
+    el.classList.add('dragging');
+    
+    document.addEventListener('mousemove', onBenchDragMove);
+    document.addEventListener('mouseup', onBenchDragEnd);
+    document.addEventListener('touchmove', onBenchDragTouchMove, { passive: false });
+    document.addEventListener('touchend', onBenchDragTouchEnd);
+}
+
+function onBenchDragMove(e) {
+    if (!dragState) return;
+    const x = e.clientX - dragState.originalLeft - dragState.offsetX;
+    const y = e.clientY - dragState.originalTop - dragState.offsetY;
+    dragState.element.style.left = x + 'px';
+    dragState.element.style.top = y + 'px';
+}
+
+function onBenchDragTouchMove(e) {
+    e.preventDefault();
+    const touch = e.touches[0];
+    if (!dragState) return;
+    const x = touch.clientX - dragState.originalLeft - dragState.offsetX;
+    const y = touch.clientY - dragState.originalTop - dragState.offsetY;
+    dragState.element.style.left = x + 'px';
+    dragState.element.style.top = y + 'px';
+}
+
+function onBenchDragEnd(e) {
+    finishBenchDrag();
+}
+
+function onBenchDragTouchEnd(e) {
+    finishBenchDrag();
+}
+
+function finishBenchDrag() {
+    document.removeEventListener('mousemove', onBenchDragMove);
+    document.removeEventListener('mouseup', onBenchDragEnd);
+    document.removeEventListener('touchmove', onBenchDragTouchMove);
+    document.removeEventListener('touchend', onBenchDragTouchEnd);
+    
+    if (dragState) {
+        dragState.element.classList.remove('dragging');
+        // 更新坐标
+        const eq = State.placedEquipment.find(e => e.id === dragState.equipmentId);
+        if (eq) {
+            eq.x = parseFloat(dragState.element.style.left);
+            eq.y = parseFloat(dragState.element.style.top);
+            eq.connectors = getEquipmentConnectors(eq);
+        }
+        // 重绘导线
+        renderWires();
+    }
+    dragState = null;
+}
+
+/* ==================== 导线连接 ==================== */
+function onConnectorClick(equipmentEl, connectorEl) {
+    const equipmentId = parseInt(equipmentEl.dataset.id);
+    const point = connectorEl.dataset.point;
+    
+    if (!State.connectingFrom) {
+        // 开始连接
+        State.connectingFrom = { equipmentId, point, element: connectorEl };
+        connectorEl.classList.add('connecting');
+        showToast('🔗 请点击另一个端点来完成导线连接', 'info');
+    } else {
+        if (State.connectingFrom.equipmentId === equipmentId) {
+            // 取消连接
+            State.connectingFrom.element.classList.remove('connecting');
+            State.connectingFrom = null;
+            return;
+        }
+        
+        const from = State.connectingFrom;
+        const to = { equipmentId, point };
+        
+        // 检查是否重复
+        const exists = State.wires.find(w =>
+            (w.from.equipmentId === from.equipmentId && w.from.point === from.point &&
+             w.to.equipmentId === to.equipmentId && w.to.point === to.point) ||
+            (w.from.equipmentId === to.equipmentId && w.from.point === to.point &&
+             w.to.equipmentId === from.equipmentId && w.to.point === from.point)
+        );
+        
+        if (exists) {
+            showToast('⚠️ 这两个端点已经连接了', 'error');
+        } else {
+            // 添加导线
+            State.wires.push({ from, to });
+            showToast('✅ 导线连接成功', 'success');
+            from.element.classList.add('connected');
+            connectorEl.classList.add('connected');
+            checkStepProgress();
+            renderWires();
+            verifyCircuit();
+        }
+        
+        from.element.classList.remove('connecting');
+        State.connectingFrom = null;
+    }
+}
+
+function renderWires() {
+    const svg = document.getElementById('wireSvg');
+    svg.setAttribute('width', '100%');
+    svg.setAttribute('height', '100%');
+    
+    // 更新所有器材端点位置
+    State.placedEquipment.forEach(eq => {
+        eq.connectors = getEquipmentConnectors(eq);
+    });
+    
+    svg.innerHTML = '';
+    const electrified = isCircuitComplete();
+    
+    State.wires.forEach((wire, i) => {
+        const eq1 = State.placedEquipment.find(e => e.id === wire.from.equipmentId);
+        const eq2 = State.placedEquipment.find(e => e.id === wire.to.equipmentId);
+        if (!eq1 || !eq2) return;
+        
+        const p1 = eq1.connectors[wire.from.point];
+        const p2 = eq2.connectors[wire.to.point];
+        if (!p1 || !p2) return;
+        
+        // 计算路径（走折线更自然）
+        const midX = (p1.x + p2.x) / 2;
+        const d = `M ${p1.x} ${p1.y} C ${midX} ${p1.y}, ${midX} ${p2.y}, ${p2.x} ${p2.y}`;
+        
+        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path.setAttribute('d', d);
+        path.setAttribute('class', 'wire-path' + (electrified ? ' electrified' : ''));
+        path.addEventListener('click', () => {
+            if (confirm('要删除这条导线吗？')) {
+                State.wires.splice(i, 1);
+                renderWires();
+                verifyCircuit();
+            }
+        });
+        svg.appendChild(path);
+        
+        // 电流流动效果
+        if (electrified) {
+            const anim = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            anim.setAttribute('r', '3');
+            anim.setAttribute('fill', '#fff');
+            anim.setAttribute('opacity', '0.8');
+            const animate = document.createElementNS('http://www.w3.org/2000/svg', 'animateMotion');
+            animate.setAttribute('dur', '1.2s');
+            animate.setAttribute('repeatCount', 'indefinite');
+            animate.setAttribute('path', d);
+            anim.appendChild(animate);
+            svg.appendChild(anim);
+        }
+    });
+}
+
+/* ==================== 电路验证 ==================== */
+function toggleSwitch(id, event) {
+    event.stopPropagation();
+    const eq = State.placedEquipment.find(e => e.id === id);
+    if (!eq) return;
+    
+    eq.data.closed = !eq.data.closed;
+    
+    const switchEl = document.getElementById(`switch-${id}`);
+    if (switchEl) {
+        switchEl.classList.toggle('closed', eq.data.closed);
+    }
+    
+    showToast(eq.data.closed ? '⚡ 开关已闭合' : '🔌 开关已断开', eq.data.closed ? 'success' : 'info');
+    
+    State.circuitClosed = eq.data.closed && isCircuitComplete();
+    verifyCircuit();
+    checkStepProgress();
+}
+
+function isCircuitComplete() {
+    const battery = State.placedEquipment.find(e => e.type === 'battery');
+    const bulb = State.placedEquipment.find(e => e.type === 'bulb');
+    const ammeter = State.placedEquipment.find(e => e.type === 'ammeter');
+    const switchEq = State.placedEquipment.find(e => e.type === 'switch');
+    
+    if (!battery || !bulb || !ammeter || !switchEq) return false;
+    
+    // 简单检查：每种器材都有导线连接
+    const equipments = [battery, bulb, ammeter, switchEq];
+    for (const eq of equipments) {
+        const hasWire = State.wires.some(w =>
+            w.from.equipmentId === eq.id || w.to.equipmentId === eq.id
+        );
+        if (!hasWire) return false;
+    }
+    return true;
+}
+
+function verifyCircuit() {
+    const switchEq = State.placedEquipment.find(e => e.type === 'switch');
+    const closed = switchEq && switchEq.data.closed && isCircuitComplete();
+    
+    const battery = State.placedEquipment.find(e => e.type === 'battery');
+    const U = battery ? battery.data.voltage : 0;
+    // 假设灯泡电阻 15Ω
+    const R = 15;
+    const I = closed ? U / R : 0;
+    
+    // 更新灯泡状态
+    State.placedEquipment.forEach(eq => {
+        if (eq.type === 'bulb') {
+            const bulbEl = eq.element.querySelector('.bulb');
+            if (bulbEl) bulbEl.classList.toggle('on', closed);
+        }
+        if (eq.type === 'ammeter') {
+            const needle = eq.element.querySelector('.ammeter-needle');
+            const reading = eq.element.querySelector('.ammeter-reading');
+            if (needle) {
+                // 最大电流 1A 对应 120度
+                const angle = -60 + (Math.min(I, 1) * 120);
+                needle.style.transform = `translate(-0%, -50%) rotate(${angle}deg)`;
+            }
+            if (reading) reading.textContent = I.toFixed(2) + 'A';
+        }
+    });
+    
+    // 更新数据面板
+    document.getElementById('circuitStatus').textContent = closed ? '✅ 已接通' : '❌ 未接通';
+    document.getElementById('circuitStatus').style.color = closed ? '#2ecc71' : '#e74c3c';
+    document.getElementById('dataVoltage').textContent = closed ? U.toFixed(1) + ' V' : '— V';
+    document.getElementById('dataCurrent').textContent = closed ? I.toFixed(2) + ' A' : '— A';
+    
+    renderWires();
+    
+    if (closed && STEPS[5].done === false) {
+        setTimeout(() => {
+            document.getElementById('successFormula').textContent = 
+                `${U}V / ${R}Ω = ${(I).toFixed(2)}A`;
+            document.getElementById('successOverlay').classList.add('show');
+        }, 500);
+    }
+}
+
+/* ==================== 步骤检查 ==================== */
+function checkStepProgress() {
+    STEPS.forEach((step, i) => {
+        if (!step.done && step.check()) {
+            step.done = true;
+            if (State.currentStep === i) State.currentStep = i + 1;
+        }
+    });
+    renderSteps();
+}
+
+/* ==================== 工具函数 ==================== */
+function isInsideBench(x, y) {
+    const rect = document.getElementById('labBench').getBoundingClientRect();
+    return x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom;
+}
+
+function showToast(msg, type = '') {
+    const toast = document.getElementById('toast');
+    toast.className = 'toast show ' + type;
+    toast.textContent = msg;
+    setTimeout(() => toast.classList.remove('show'), 2000);
+}
+
+function closeSuccess() {
+    document.getElementById('successOverlay').classList.remove('show');
+}
+
+function resetExperiment() {
+    if (!confirm('确定要重置实验吗？所有进度将清除。')) return;
+    
+    State.currentStep = 0;
+    State.placedEquipment = [];
+    State.wires = [];
+    State.connectingFrom = null;
+    State.circuitClosed = false;
+    STEPS.forEach(s => s.done = false);
+    
+    // 清除器材
+    document.getElementById('labBench').querySelectorAll('.equipment').forEach(e => e.remove());
+    document.getElementById('wireSvg').innerHTML = '';
+    
+    // 重置UI
+    document.getElementById('circuitStatus').textContent = '❌ 未接通';
+    document.getElementById('dataVoltage').textContent = '— V';
+    document.getElementById('dataCurrent').textContent = '— A';
+    document.getElementById('successOverlay').classList.remove('show');
+    
+    renderToolbox();
+    renderSteps();
+    showToast('🔄 实验已重置', 'info');
+}
+
+/* ==================== 初始化 ==================== */
+renderSteps();
+renderToolbox();
+
+// 在导线 SVG 上点击取消连接
+document.getElementById('labBench').addEventListener('click', (e) => {
+    if (e.target.id === 'labBench' && State.connectingFrom) {
+        State.connectingFrom.element.classList.remove('connecting');
+        State.connectingFrom = null;
+    }
+});
+</script>
+<script src="js/mobile.js?v=1"></script>
+<style>
+/* 拖拽实验页的移动端专属断点（覆盖 style.css 里的全局规则） */
+@media (max-width: 900px) {
+    body { overflow: auto; padding: 8px; min-height: -webkit-fill-available; height: auto; }
+    .container {
+        grid-template-columns: 1fr !important;
+        height: auto !important;
+    }
+    .steps-panel, .control-panel { max-height: 60vh; overflow: auto; }
+    .lab-bench { aspect-ratio: 1 / 1.1; min-height: 420px; }
+    .circuit-element .slot { min-height: 44px; min-width: 44px; }
+    button { min-height: 44px; font-size: 1rem; }
+}
+</style>
+
+</body>
+</html>

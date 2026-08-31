@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#a01830">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="format-detection" content="telephone=no">
+    <title>学科分类浏览 | 中国互动模拟实验平台</title>
+    <link rel="stylesheet" href="css/style.css?v=4">
+    <link rel="stylesheet" href="css/mobile.css?v=1">
+    <style>
+        .filter-bar {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 25px;
+            box-shadow: var(--card-shadow);
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        
+        .filter-group {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        
+        .filter-label {
+            font-weight: 500;
+            color: var(--dark-color);
+            margin-right: 5px;
+        }
+        
+        .filter-btn {
+            padding: 6px 15px;
+            border: 2px solid var(--border-color);
+            background: white;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: var(--transition);
+            font-size: 0.9rem;
+        }
+        
+        .filter-btn:hover,
+        .filter-btn.active {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+        
+        .search-box {
+            flex: 1;
+            min-width: 200px;
+            position: relative;
+        }
+        
+        .search-box input {
+            width: 100%;
+            padding: 8px 15px;
+            border: 2px solid var(--border-color);
+            border-radius: 20px;
+            font-size: 0.9rem;
+        }
+        
+        .search-box input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+        
+        .sort-select {
+            padding: 8px 15px;
+            border: 2px solid var(--border-color);
+            border-radius: 20px;
+            font-size: 0.9rem;
+            background: white;
+            cursor: pointer;
+        }
+        
+        .available-only {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+        }
+        
+        .available-only input {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-light);
+        }
+        
+        .empty-state h3 {
+            font-size: 1.5rem;
+            margin-bottom: 10px;
+        }
+        
+        .empty-state p {
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <!-- 顶部导航 -->
+    <nav class="navbar">
+        <div class="navbar-container">
+            <a href="index.html" class="navbar-brand">
+                <span class="logo-icon">🔬</span>
+                <span>中国互动模拟实验平台</span>
+            </a>
+            <ul class="navbar-menu">
+                <li><a href="index.html">首页</a></li>
+                <li><a href="browse.html">全部实验</a></li>
+                <li><a href="browse.html?subject=physics">物理</a></li>
+                <li><a href="browse.html?subject=chemistry">化学</a></li>
+                <li><a href="browse.html?subject=biology">生物</a></li>
+                <li><a href="browse.html?subject=mathematics">数学</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- 浏览页面主体 -->
+    <div class="browse-page">
+        <!-- 面包屑导航 -->
+        <div id="breadcrumb"></div>
+        
+        <!-- 页面头部 -->
+        <div class="browse-header">
+            <h1 id="pageTitle">全部模拟实验</h1>
+            <p id="pageDescription">探索各个学科的互动模拟实验</p>
+        </div>
+
+        <!-- 筛选栏 -->
+        <div class="filter-bar">
+            <div class="filter-group">
+                <span class="filter-label">学科：</span>
+                <button class="filter-btn active" data-filter="all">全部</button>
+                <button class="filter-btn" data-filter="physics">物理</button>
+                <button class="filter-btn" data-filter="chemistry">化学</button>
+                <button class="filter-btn" data-filter="biology">生物</button>
+                <button class="filter-btn" data-filter="earth-science">地球</button>
+                <button class="filter-btn" data-filter="mathematics">数学</button>
+            </div>
+            <div class="filter-group">
+                <span class="filter-label">年级：</span>
+                <button class="filter-btn grade-btn active" data-grade="all">全部</button>
+                <button class="filter-btn grade-btn" data-grade="小学">小学</button>
+                <button class="filter-btn grade-btn" data-grade="初中">初中</button>
+                <button class="filter-btn grade-btn" data-grade="高中">高中</button>
+                <button class="filter-btn grade-btn" data-grade="大学">大学</button>
+            </div>
+            <div class="search-box">
+                <input type="text" id="filterSearch" placeholder="搜索实验名称...">
+            </div>
+            <label class="available-only">
+                <input type="checkbox" id="availableOnly">
+                <span>仅显示可用</span>
+            </label>
+        </div>
+
+        <!-- 实验网格 -->
+        <div class="browse-grid" id="browseGrid">
+            <!-- 实验卡片将由 JavaScript 动态生成 -->
+        </div>
+
+        <!-- 空状态 -->
+        <div class="empty-state hidden" id="emptyState">
+            <h3>🔍 没有找到匹配的实验</h3>
+            <p>尝试调整筛选条件或搜索关键词</p>
+            <button class="btn btn-primary" onclick="resetFilters()">重置筛选</button>
+        </div>
+    </div>
+
+    <!-- 页脚 -->
+    <footer class="footer">
+        <div class="footer-container">
+            <div class="footer-section">
+                <h4>关于平台</h4>
+                <p>中国互动模拟实验平台致力于提供高质量的科学教育资源。</p>
+            </div>
+            <div class="footer-section">
+                <h4>学科分类</h4>
+                <ul>
+                    <li><a href="browse.html?subject=physics">物理实验</a></li>
+                    <li><a href="browse.html?subject=chemistry">化学实验</a></li>
+                    <li><a href="browse.html?subject=biology">生物实验</a></li>
+                    <li><a href="browse.html?subject=earth-science">地球科学</a></li>
+                    <li><a href="browse.html?subject=mathematics">数学实验</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h4>快速链接</h4>
+                <ul>
+                    <li><a href="simulation.html?subject=physics&id=ohms-law">欧姆定律</a></li>
+                    <li><a href="simulation.html?subject=physics&id=projectile-motion">抛体运动</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>© 2026 中国互动模拟实验平台 | 灵感来源于 PhET Interactive Simulations</p>
+        </div>
+    </footer>
+
+    <script src="js/data.js?v=6"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/mobile.js?v=1"></script>
+    <script>
+        // 从URL获取参数
+        const urlParams = new URLSearchParams(window.location.search);
+        const defaultSubject = urlParams.get('subject') || 'all';
+
+        // 状态管理
+        let currentFilter = defaultSubject;
+        let currentSearch = '';
+        let availableOnly = false;
+        let currentGrade = 'all';
+
+        // 初始化页面
+        function initPage() {
+            // 设置默认筛选按钮状态
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                if (btn.dataset.filter === currentFilter) {
+                    btn.classList.add('active');
+                }
+            });
+
+            // 更新页面标题
+            updatePageTitle();
+
+            // 渲染实验列表
+            renderSimulations();
+
+            // 绑定事件
+            bindEvents();
+        }
+
+        // 更新页面标题
+        function updatePageTitle() {
+            const title = document.getElementById('pageTitle');
+            const description = document.getElementById('pageDescription');
+            const breadcrumb = document.getElementById('breadcrumb');
+
+            if (currentFilter === 'all') {
+                title.textContent = '全部模拟实验';
+                description.textContent = '探索各个学科的互动模拟实验，共 ' + getTotalCount() + ' 个实验';
+                breadcrumb.innerHTML = PhetUtils.generateBreadcrumb([
+                    { text: '首页', url: 'index.html' },
+                    { text: '全部实验' }
+                ]);
+            } else if (subjectsConfig[currentFilter]) {
+                const config = subjectsConfig[currentFilter];
+                title.textContent = `${config.icon} ${config.name}实验`;
+                description.textContent = config.description + `，共 ${config.count} 个实验`;
+                breadcrumb.innerHTML = PhetUtils.generateBreadcrumb([
+                    { text: '首页', url: 'index.html' },
+                    { text: '全部实验', url: 'browse.html' },
+                    { text: config.name }
+                ]);
+            }
+        }
+
+        // 获取总数
+        function getTotalCount() {
+            if (currentFilter === 'all') {
+                return Object.values(subjectsConfig).reduce((sum, s) => sum + s.count, 0);
+            }
+            return subjectsConfig[currentFilter]?.count || 0;
+        }
+
+        // 收集所有实验
+        function getAllSimulations() {
+            if (currentFilter === 'all') {
+                const all = [];
+                Object.entries(simulationsConfig).forEach(([subject, sims]) => {
+                    sims.forEach(sim => {
+                        all.push({ ...sim, subject });
+                    });
+                });
+                return all;
+            }
+            return (simulationsConfig[currentFilter] || []).map(sim => ({
+                ...sim,
+                subject: currentFilter
+            }));
+        }
+
+        // 渲染实验列表
+        function renderSimulations() {
+            let sims = getAllSimulations();
+
+            // 搜索过滤
+            if (currentSearch) {
+                sims = sims.filter(sim => 
+                    sim.name.toLowerCase().includes(currentSearch.toLowerCase())
+                );
+            }
+
+            // 年级过滤
+            if (currentGrade !== 'all') {
+                sims = sims.filter(sim => {
+                    const grades = (typeof experimentGrades !== 'undefined' && experimentGrades[sim.id]) || [];
+                    return grades.includes(currentGrade);
+                });
+            }
+
+            // 可用过滤
+            if (availableOnly) {
+                sims = sims.filter(sim => sim.available);
+            }
+
+            const grid = document.getElementById('browseGrid');
+            const emptyState = document.getElementById('emptyState');
+
+            if (sims.length === 0) {
+                grid.innerHTML = '';
+                emptyState.classList.remove('hidden');
+            } else {
+                emptyState.classList.add('hidden');
+                // 去重处理（同一个实验可能在多个学科中出现）
+                const seen = new Set();
+                const uniqueSims = sims.filter(sim => {
+                    const key = sim.id;
+                    if (seen.has(key)) return false;
+                    seen.add(key);
+                    return true;
+                });
+
+                grid.innerHTML = uniqueSims.map(sim => 
+                    PhetUtils.generateSimulationCard(sim, sim.subject)
+                ).join('');
+            }
+
+            // 更新计数
+            updateCount(sims);
+        }
+
+        // 更新显示数量
+        function updateCount(sims) {
+            const existing = document.getElementById('countBadge');
+            if (existing) existing.remove();
+            
+            const count = document.createElement('span');
+            count.id = 'countBadge';
+            count.style.cssText = 'margin-left: 10px; color: var(--text-light); font-size: 0.9rem;';
+            count.textContent = `显示 ${sims.length} 个实验`;
+            document.getElementById('pageDescription').appendChild(count);
+        }
+
+        // 绑定事件
+        function bindEvents() {
+            // 学科筛选按钮
+            document.querySelectorAll('.filter-btn[data-filter]').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.filter-btn[data-filter]').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    currentFilter = btn.dataset.filter;
+                    updatePageTitle();
+                    renderSimulations();
+                });
+            });
+
+            // 年级筛选按钮
+            document.querySelectorAll('.grade-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.grade-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    currentGrade = btn.dataset.grade;
+                    renderSimulations();
+                });
+            });
+
+            // 搜索框
+            const searchInput = document.getElementById('filterSearch');
+            searchInput.addEventListener('input', (e) => {
+                currentSearch = e.target.value;
+                renderSimulations();
+            });
+
+            // 仅显示可用
+            const availableCheckbox = document.getElementById('availableOnly');
+            availableCheckbox.addEventListener('change', (e) => {
+                availableOnly = e.target.checked;
+                renderSimulations();
+            });
+        }
+
+        // 重置筛选
+        function resetFilters() {
+            currentSearch = '';
+            availableOnly = false;
+            currentFilter = 'all';
+            currentGrade = 'all';
+            document.getElementById('filterSearch').value = '';
+            document.getElementById('availableOnly').checked = false;
+            document.querySelectorAll('.filter-btn[data-filter]').forEach(b => {
+                b.classList.toggle('active', b.dataset.filter === 'all');
+            });
+            document.querySelectorAll('.grade-btn').forEach(b => {
+                b.classList.toggle('active', b.dataset.grade === 'all');
+            });
+            updatePageTitle();
+            renderSimulations();
+        }
+
+        // 启动
+        document.addEventListener('DOMContentLoaded', initPage);
+    </script>
+</body>
+</html>

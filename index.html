@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#a01830">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="format-detection" content="telephone=no">
+    <title>中国互动模拟实验平台 | 科学探索</title>
+    <meta name="description" content="仿PhET的中国版互动科学模拟实验平台，涵盖物理、化学、生物、地球科学和数学等多个学科，提供可操作的虚拟实验体验">
+    <link rel="stylesheet" href="css/style.css?v=4">
+    <link rel="stylesheet" href="css/mobile.css?v=1">
+    <style>
+        /* 首页特色样式 */
+        .featured-section {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            padding: 60px 20px;
+        }
+        
+        .featured-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .featured-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+        }
+        
+        .featured-card {
+            background: white;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: var(--card-shadow);
+            transition: var(--transition);
+            text-decoration: none;
+            color: var(--text-color);
+            display: block;
+        }
+        
+        .featured-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--card-hover-shadow);
+        }
+        
+        .featured-badge {
+            display: inline-block;
+            background: var(--primary-color);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 15px;
+            font-size: 0.75rem;
+            margin-bottom: 10px;
+        }
+        
+        .hero-stats {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-top: 30px;
+            flex-wrap: wrap;
+        }
+        
+        .hero-stat {
+            background: rgba(255, 255, 255, 0.9);
+            padding: 15px 25px;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        }
+        
+        .hero-stat-number {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+        
+        .hero-stat-label {
+            font-size: 0.9rem;
+            color: var(--text-light);
+        }
+        
+        .cta-section {
+            background: linear-gradient(135deg, var(--primary-color) 0%, #a01830 100%);
+            color: white;
+            padding: 60px 20px;
+            text-align: center;
+        }
+        
+        .cta-section h2 {
+            font-size: 2rem;
+            margin-bottom: 15px;
+        }
+        
+        .cta-section p {
+            font-size: 1.2rem;
+            margin-bottom: 25px;
+            opacity: 0.9;
+        }
+        
+        .cta-btn {
+            display: inline-block;
+            background: white;
+            color: var(--primary-color);
+            padding: 15px 40px;
+            border-radius: 30px;
+            text-decoration: none;
+            font-weight: bold;
+            font-size: 1.1rem;
+            transition: var(--transition);
+        }
+        
+        .cta-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
+        }
+    </style>
+</head>
+<body>
+    <!-- 顶部导航 -->
+    <nav class="navbar">
+        <div class="navbar-container">
+            <a href="index.html" class="navbar-brand">
+                <span class="logo-icon">🔬</span>
+                <span>中国互动模拟实验平台</span>
+            </a>
+            <ul class="navbar-menu">
+                <li><a href="index.html">首页</a></li>
+                <li><a href="experiment-drag.html" style="background: var(--accent-color); color: var(--primary-color); border-radius: 6px; padding: 6px 12px;">🧪 拖拽实验台</a></li>
+                <li><a href="browse.html">全部实验</a></li>
+                <li><a href="browse.html?subject=physics">物理</a></li>
+                <li><a href="browse.html?subject=chemistry">化学</a></li>
+                <li><a href="browse.html?subject=biology">生物</a></li>
+                <li><a href="browse.html?subject=mathematics">数学</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Hero 区域 -->
+    <section class="hero">
+        <div class="hero-content">
+            <h1>探索科学的<span class="highlight">奇妙世界</span></h1>
+            <p>通过互动模拟实验，让抽象的科学原理变得直观易懂。涵盖物理、化学、生物、地球科学和数学等多个学科。</p>
+            
+            <div class="hero-search">
+                <input type="text" id="searchInput" placeholder="🔍 搜索实验，如：欧姆定律、抛体运动...">
+                <button id="searchButton" title="搜索">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <path d="M21 21l-4.35-4.35"></path>
+                    </svg>
+                </button>
+            </div>
+
+            <div class="hero-stats">
+                <div class="hero-stat">
+                    <div class="hero-stat-number">173+</div>
+                    <div class="hero-stat-label">互动模拟实验</div>
+                </div>
+                <div class="hero-stat">
+                    <div class="hero-stat-number">5</div>
+                    <div class="hero-stat-label">学科分类</div>
+                </div>
+                <div class="hero-stat">
+                    <div class="hero-stat-number">中文</div>
+                    <div class="hero-stat-label">全中文界面</div>
+                </div>
+                <div class="hero-stat">
+                    <div class="hero-stat-number">免费</div>
+                    <div class="hero-stat-label">随时随地学习</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 统计信息 -->
+    <section class="stats">
+        <div class="stats-container">
+            <div class="stat-item">
+                <div class="stat-number">173</div>
+                <div class="stat-label">互动模拟实验</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number">5</div>
+                <div class="stat-label">学科领域</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number">∞</div>
+                <div class="stat-label">学习可能</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number">0</div>
+                <div class="stat-label">使用门槛</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 学科分类 -->
+    <section class="subjects">
+        <h2 class="section-title">选择学科，开始探索</h2>
+        <div class="subjects-grid" id="subjectsGrid">
+            <!-- 学科卡片将由 JavaScript 动态生成 -->
+        </div>
+    </section>
+
+    <!-- 精选实验 -->
+    <section class="featured-section">
+        <div class="featured-container">
+            <h2 class="section-title">🔥 精选实验</h2>
+            <div class="featured-grid" id="featuredGrid">
+                <!-- 精选实验卡片将由 JavaScript 动态生成 -->
+            </div>
+        </div>
+    </section>
+
+    <!-- 行动号召 -->
+    <section class="cta-section">
+        <h2>准备好开始你的科学探索之旅了吗？</h2>
+        <p>无论你是学生、教师还是科学爱好者，这里都有适合你的互动实验</p>
+        <a href="browse.html" class="cta-btn">浏览全部实验 →</a>
+    </section>
+
+    <!-- 页脚 -->
+    <footer class="footer">
+        <div class="footer-container">
+            <div class="footer-section">
+                <h4>关于平台</h4>
+                <p>中国互动模拟实验平台致力于提供高质量的科学教育资源，通过互动模拟让学习变得更加有趣和高效。</p>
+            </div>
+            <div class="footer-section">
+                <h4>学科分类</h4>
+                <ul>
+                    <li><a href="browse.html?subject=physics">物理实验</a></li>
+                    <li><a href="browse.html?subject=chemistry">化学实验</a></li>
+                    <li><a href="browse.html?subject=biology">生物实验</a></li>
+                    <li><a href="browse.html?subject=earth-science">地球科学</a></li>
+                    <li><a href="browse.html?subject=mathematics">数学实验</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h4>实验资源</h4>
+                <ul>
+                    <li><a href="simulation.html?subject=physics&id=ohms-law">欧姆定律</a></li>
+                    <li><a href="simulation.html?subject=physics&id=projectile-motion">抛体运动</a></li>
+                    <li><a href="#">单摆实验</a></li>
+                    <li><a href="#">更多实验开发中...</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h4>联系方式</h4>
+                <ul>
+                    <li>📧 contact@phet-cn.edu</li>
+                    <li>💬 学习交流群</li>
+                    <li>📚 教学资源</li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>© 2026 中国互动模拟实验平台 | 本平台为教育目的而创建，灵感来源于 PhET Interactive Simulations</p>
+        </div>
+    </footer>
+
+    <script src="js/data.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/mobile.js?v=1"></script>
+    <script>
+        // 动态生成学科卡片
+        document.getElementById('subjectsGrid').innerHTML = 
+            Object.entries(subjectsConfig).map(([key, config]) => 
+                PhetUtils.generateSubjectCard(key, config)
+            ).join('');
+
+        // 精选实验
+        const featuredSims = [
+            { 
+                title: '拖拽式欧姆定律实验台', 
+                description: '亲手拖动电池、开关、灯泡，一步步搭建真实电路！6个操作步骤详细指导，像真实实验一样操作',
+                url: 'experiment-drag.html',
+                badge: '🏆 全新',
+                gradient: 'linear-gradient(135deg, #f5af19 0%, #f12711 100%)'
+            },
+            { 
+                title: '欧姆定律', 
+                description: '探索电压、电流和电阻之间的关系，通过拖动滑块观察电路中电流的变化',
+                subject: 'physics',
+                id: 'ohms-law',
+                badge: '⭐ 热门',
+                gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+            },
+            { 
+                title: '抛体运动', 
+                description: '调整发射角度和初速度，观察抛体的运动轨迹，理解重力和空气阻力的影响',
+                subject: 'physics',
+                id: 'projectile-motion',
+                badge: '🎯 经典',
+                gradient: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)'
+            },
+            { 
+                title: '单摆实验室', 
+                description: '探索单摆周期与摆长、摆角的关系，验证单摆运动的物理规律',
+                subject: 'physics',
+                id: 'pendulum-lab',
+                badge: '🔬 物理',
+                gradient: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)'
+            },
+            { 
+                title: '浮力实验', 
+                description: '调整物体和液体密度，观察物体浮沉状态，直观理解阿基米德原理',
+                subject: 'physics',
+                id: 'buoyancy',
+                badge: '💧 液体',
+                gradient: 'linear-gradient(135deg, #2193b0 0%, #6dd5ed 100%)'
+            }
+        ];
+
+        document.getElementById('featuredGrid').innerHTML = featuredSims.map(sim => `
+            <a href="${sim.url || `simulation.html?subject=${sim.subject}&id=${sim.id}`}" class="featured-card">
+                <div class="simulation-thumb" style="background: ${sim.gradient};">${sim.url ? '🧪' : '🔬'}</div>
+                <div class="simulation-info">
+                    <span class="featured-badge">${sim.badge}</span>
+                    <h3>${sim.title}</h3>
+                    <p>${sim.description}</p>
+                </div>
+            </a>
+        `).join('');
+    </script>
+</body>
+</html>
