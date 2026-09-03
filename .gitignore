@@ -1,0 +1,25 @@
+# ===== 部署/调试脚本（内含 GitHub Token，禁止提交到公开仓库）=====
+*.bat
+*.ps1
+
+# GitHub API 响应与令牌信息（含敏感数据）
+create-repo-response.json
+repo-data.json
+repo-response.json
+pages-data.json
+pages-response.json
+pages3-response.json
+token-info.json
+token-info2.json
+token-scopes.json
+user-repos.json
+
+# ===== 临时文件 =====
+*.tmp.js
+*.log
+
+# ===== 系统/编辑器垃圾文件 =====
+Thumbs.db
+.DS_Store
+.vscode/
+.idea/
