@@ -1,0 +1,12 @@
+# Render Blueprint — https://render.com/docs/blueprint-spec
+# 纯静态站点：无需构建步骤，直接把仓库根目录发布出去。
+# 用法：Render Dashboard → New → Blueprint → 选择 liuxing5/phet-cn。
+services:
+  - type: web
+    name: phet-cn
+    runtime: static
+    branch: main
+    # 无构建步骤（零依赖、零打包）
+    staticPublishPath: ./
+    # 推送 main 分支后自动重新发布
+    autoDeploy: true

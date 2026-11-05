@@ -14,6 +14,9 @@ token-info2.json
 token-scopes.json
 user-repos.json
 
+# ===== 与本站无关的本地素材目录（约 248MB，禁止误提交）=====
+image-blaster/
+
 # ===== 临时文件 =====
 *.tmp.js
 *.log

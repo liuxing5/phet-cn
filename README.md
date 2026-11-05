@@ -112,7 +112,25 @@ phet-cn/
 
 ## 📦 部署
 
-站点托管于 **GitHub Pages**（`main` 分支根目录，强制 HTTPS）：
+站点是纯静态文件，可同时托管在 **GitHub Pages** 和 **Render**，两者共用同一份代码，不需要任何构建步骤。
+
+### Render（推荐）
+
+仓库根目录已内置 [`render.yaml`](render.yaml) 蓝图，一次性关联即可：
+
+1. 用 GitHub 账号登录 <https://dashboard.render.com>，打开 **New → Blueprint**。
+2. 选择仓库 `liuxing5/phet-cn`，Render 会自动读取 `render.yaml`。
+3. 点击 **Apply**，约 1 分钟后站点上线：<https://phet-cn.onrender.com>。
+
+也可以直接点下面的按钮，跳转到 Render 的蓝图部署页：
+
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/liuxing5/phet-cn)
+
+之后每次推送 `main`，Render 都会自动重新发布（`autoDeploy: true`）。想用自己的域名，在服务页 **Settings → Custom Domains** 里添加即可。
+
+### GitHub Pages
+
+站点同时托管于 **GitHub Pages**（`main` 分支根目录，强制 HTTPS）：
 
 ```bash
 git add . && git commit -m "update" && git push origin main
