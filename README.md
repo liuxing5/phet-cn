@@ -3,7 +3,7 @@
 > 灵感来自 [PhET Interactive Simulations](https://phet.colorado.edu/) 的全中文开源互动实验平台。
 > 纯前端实现（HTML + Canvas 2D + 原生 JavaScript），零依赖、零构建、免登录，打开即用。
 
-**🌐 在线体验：<https://liuxing5.github.io/phet-cn/>**
+**🌐 在线体验：<https://phet-cn.onrender.com>**（Render） · <https://liuxing5.github.io/phet-cn/>（GitHub Pages）
 
 ---
 
@@ -116,11 +116,13 @@ phet-cn/
 
 ### Render（推荐）
 
-仓库根目录已内置 [`render.yaml`](render.yaml) 蓝图，一次性关联即可：
+**已上线：<https://phet-cn.onrender.com>**（静态站点，免费额度，`main` 分支根目录，无构建步骤）。
+
+仓库根目录内置 [`render.yaml`](render.yaml) 蓝图，换账号或重新关联时一次性完成：
 
 1. 用 GitHub 账号登录 <https://dashboard.render.com>，打开 **New → Blueprint**。
 2. 选择仓库 `liuxing5/phet-cn`，Render 会自动读取 `render.yaml`。
-3. 点击 **Apply**，约 1 分钟后站点上线：<https://phet-cn.onrender.com>。
+3. 点击 **Apply**，约 1 分钟后站点上线。
 
 也可以直接点下面的按钮，跳转到 Render 的蓝图部署页：
 
